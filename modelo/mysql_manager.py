@@ -1,10 +1,9 @@
-# mysql_manager.py
 import mysql.connector
 
 class MySQLManager:
     def __init__(self):
         try:
-            # Conexión directa usando tu usuario y contraseña
+            # esta es con mi usuario y mi contraseña de mysql
             self.conn = mysql.connector.connect(
                 host="127.0.0.1",
                 user="DaniSL",         
@@ -33,5 +32,5 @@ class MySQLManager:
         """
         self.cursor.execute(query)
         self.conn.commit()
-        print("Tabla 'registro_actividad' lista ✅")
+        print("Tabla 'registro_actividad' lista")
 
