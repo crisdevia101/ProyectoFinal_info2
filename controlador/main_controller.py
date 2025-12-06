@@ -1,4 +1,3 @@
-# controlador/main_controller.py
 import sys
 from PyQt5 import QtWidgets
 from vista.visor3D import Visor3D
@@ -8,13 +7,11 @@ import numpy as np
 
 class MainController:
     def __init__(self):
-        # Crear la aplicación primero
+      #crea la ap👌
         self.app = QtWidgets.QApplication(sys.argv)
-
-        # Crear la vista
+ 
         self.vista_visor = Visor3D()
 
-        # Crear el controlador
         self.ctrl_visor = CtrlVisor3D(self.vista_visor)
 
     def ejecutar(self):
