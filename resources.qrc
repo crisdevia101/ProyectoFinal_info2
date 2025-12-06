@@ -1,0 +1,7 @@
+<RCC>
+  <qresource prefix="/images">
+    <file>images/fondo_azulNeon.jpg</file>
+    <file>images/fondo_circuito.webp</file>
+    <file>images/fondo_negro.jpg</file>
+  </qresource>
+</RCC>
