@@ -1,3 +1,11 @@
+#MultiMed Analyzer
+
+#Integrantes
+# -Daniela Stefany Luna Popayan
+# -Cristian Camilo Devia Bohorquez
+# -Samia Selena Rhenals Arrieta
+# -Gyohan David Perdomo Audor
+
 from PyQt5.QtWidgets import QApplication
 import sys
 import resources_rc
