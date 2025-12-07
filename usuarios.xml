@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<config>
+    <usuarios>
+
+        <usuario>
+            <nombre>admin</nombre>
+            <password>1234</password>
+            <rol>superusuario</rol>
+        </usuario>
+
+        <usuario>
+            <nombre>invitado</nombre>
+            <password>0000</password>
+            <rol>lector</rol>
+        </usuario>
+
+        <usuario>
+            <nombre>admin2</nombre>
+            <password>4321</password>
+            <rol>superusuario</rol>
+        </usuario>
+
+    </usuarios>
+</config>
