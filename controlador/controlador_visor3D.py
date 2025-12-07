@@ -54,12 +54,23 @@ class ControladorVisor3D:
         return img
 
     def _add_title(self, img, title):
-        title_h = 35
+        title_h = 20 
         w = img.shape[1]
         bar = np.zeros((title_h, w), dtype=np.uint8)
-        cv2.putText(bar, title, (10, 25), cv2.FONT_HERSHEY_SIMPLEX,
-                    0.8, 255, 2, cv2.LINE_AA)
+
+        cv2.putText(
+            bar,
+            title,
+            (10, 15),              
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.45,                  
+            255,
+            1,                     
+            cv2.LINE_AA
+        )
+
         return np.vstack((bar, img))
+
 
     def _array_to_qpixmap(self, arr, lbl):
         # Normalizar intensidades
@@ -72,10 +83,10 @@ class ControladorVisor3D:
         target_w = lbl.width()
         target_h = lbl.height()
 
-        # Resize manteniendo calidad
+            # Resize manteniendo calidad
         a_resized = cv2.resize(a, (target_w, target_h), interpolation=cv2.INTER_AREA)
 
-        # Convertir a QPixmap
+            # Convertir a QPixmap
         qimg = QImage(a_resized.data, target_w, target_h, target_w, QImage.Format_Grayscale8)
         return QPixmap.fromImage(qimg)
 
@@ -183,12 +194,10 @@ class ControladorVisor3D:
 
         pix = self._array_to_qpixmap(mip, lbl)
 
-        
         if lbl:
             lbl.setPixmap(pix.scaled(lbl.width(), lbl.height(), Qt.KeepAspectRatio))
 
         out = f"mip_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
         cv2.imwrite(out, mip)
-
 
         self.model.registrar_actividad(self.usuario, "mip_generada", out)
