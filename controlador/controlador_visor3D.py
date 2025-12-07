@@ -130,7 +130,7 @@ class ControladorVisor3D:
         
         img = self._add_title(img, f"Axial - Slice: {i}")
 
-        lbl = getattr(self.view, "labelAxial", None)
+        lbl = getattr(self.view, "Axial", None)
         if lbl:
             pix = self._array_to_qpixmap(img, lbl)
             lbl.setPixmap(pix)
@@ -144,7 +144,7 @@ class ControladorVisor3D:
         
         img = self._add_title(img, f"Sagital - Slice: {i}")
 
-        lbl = getattr(self.view, "labelSagital", None)
+        lbl = getattr(self.view, "Sagital", None)
         if lbl:
             pix = self._array_to_qpixmap(img, lbl)
             lbl.setPixmap(pix)
@@ -158,7 +158,7 @@ class ControladorVisor3D:
 
         img = self._add_title(img, f"Coronal - Slice: {i}")
 
-        lbl = getattr(self.view, "labelCoronal", None)
+        lbl = getattr(self.view, "Coronal", None)
         if lbl:
             pix = self._array_to_qpixmap(img, lbl)
             lbl.setPixmap(pix)
@@ -189,5 +189,6 @@ class ControladorVisor3D:
 
         out = f"mip_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
         cv2.imwrite(out, mip)
+
 
         self.model.registrar_actividad(self.usuario, "mip_generada", out)
