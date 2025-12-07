@@ -7,18 +7,55 @@ import xml.etree.ElementTree as ET
 from datetime import datetime
 import pydicom
 import nibabel as nib
-from scipy.io import loadmat
+from scipy.io import loadmat 
 from scipy.signal import butter, filtfilt
 import csv
+
+class SeñalGestor:
+    """
+    Clase encargada de la lógica de bajo nivel para cargar archivos .mat.
+    Busca automáticamente la matriz de señal más grande.
+    """
+    def cargar_mat(self, path):
+        """
+        Carga el contenido de un archivo .mat y devuelve la matriz de la señal.
+        """
+        try:
+            mat_contents = loadmat(path) 
+            
+            # 1. Definir claves de metadatos estándar de MATLAB a ignorar
+            ignore_keys = ['__header__', '__version__', '__globals__']
+            
+            signal_candidates = {}
+            
+            for key, value in mat_contents.items():
+                if key not in ignore_keys and isinstance(value, np.ndarray) and value.ndim >= 1:
+                    signal_candidates[key] = value.size 
+            
+            if not signal_candidates:
+                print("Error: No se encontró ninguna matriz de datos válida en el archivo .mat.")
+                return None
+            
+            #Selecciona la clave que corresponde al array más grande
+            best_key = max(signal_candidates, key=signal_candidates.get)
+            signal_array = mat_contents[best_key]
+            
+            print(f">>> Éxito: Se seleccionó automáticamente la clave de señal: '{best_key}'")
+            
+            #Aplana si es un vector simple (1D) a una matriz (N, 1) para el procesamiento por canal
+            if signal_array.ndim == 1:
+                signal_array = signal_array[:, np.newaxis]
+            
+            return signal_array.astype(np.float32)
+                
+        except Exception as e:
+            print(f"Error al cargar el archivo MAT en SeñalGestor: {e}")
+            return None
 
 
 class Model:
 
     def __init__(self):
-
-        # ----------------------------
-        # Carpetas principales del proyecto
-        # ----------------------------
         self.carpeta_usuarios = "usuarios"
         self.carpeta_estudios = "estudios"
         self.carpeta_fft = "resultados_fft"
@@ -27,30 +64,22 @@ class Model:
         for c in [self.carpeta_usuarios, self.carpeta_estudios, self.carpeta_fft, self.carpeta_hist]:
             os.makedirs(c, exist_ok=True)
 
-        # ----------------------------
-        # Archivo XML para login
-        # ----------------------------
         self.archivo_xml = "usuarios.xml"
 
-        # ----------------------------
         # Base de datos MySQL
-        # ----------------------------
         self._conectar_mysql()
         self._crear_tabla_logs()
 
-        # ----------------------------
         # Webcam
-        # ----------------------------
         self.cap = None
 
         # Imagen actual para procesamiento
         self.imagen = None
+        
+        self.senal_gestor = SeñalGestor() 
 
 
-    # ====================================================================
-    #                          LOGIN (XML)
-    # ====================================================================
-
+    #LOGIN (XML)
     def validar_usuario(self, username, password):
         tree = ET.parse(self.archivo_xml)
         root = tree.getroot()
@@ -65,10 +94,8 @@ class Model:
                 return True
 
         return False
-
-    # ====================================================================
-    #                   BASE DE DATOS (MySQL)
-    # ====================================================================
+    
+    #BASE DE DATOS (MySQL)
 
     def _conectar_mysql(self):
         try:
@@ -94,7 +121,7 @@ class Model:
                 )
                 self.cursor = self.db.cursor()
             except Exception as e:
-                print("⚠ ERROR MYSQL:", e)
+                print("ERROR MYSQL:", e)
                 self.db = None
 
     def _crear_tabla_logs(self):
@@ -123,9 +150,7 @@ class Model:
         self.cursor.execute(query, valores)
         self.db.commit()
 
-    # ====================================================================
-    #                        CÁMARA WEB (OpenCV)
-    # ====================================================================
+    #CÁMARA WEB (OpenCV)
 
     def iniciar_camara(self):
         print(">>> intentando abrir camara...")
@@ -161,9 +186,8 @@ class Model:
             self.cap.release()
             self.cap = None
 
-    # ====================================================================
-    #              PROCESAMIENTO DE IMÁGENES JPG/PNG/DICOM/NIFTI
-    # ====================================================================
+
+    #PROCESAMIENTO DE IMÁGENES JPG/PNG/DICOM/NIFTI
 
     def guardar_imagen_actual(self, img):
         self.imagen = img
@@ -186,6 +210,8 @@ class Model:
                 img = self.normalizar_hu(img)
                 self.imagen = img
                 return img
+            
+                self.registrar_actividad("sistema", "cargar_imagen_dicom", csv_path)
 
             # --------------------------- NIFTI (.nii .gz) ---------------------------
             if ext in [".nii", ".gz"]:
@@ -204,11 +230,8 @@ class Model:
             print("ERROR cargar_imagen:", e)
             return None
 
-    # -------------- Procesamiento solicitado -----------------
 
-     # ====================================================================
-    #              PROCESAMIENTO DE IMÁGENES (SIEMPRE DESDE ORIGINAL)
-    # ====================================================================
+    #PROCESAMIENTO DE IMÁGENES (SIEMPRE DESDE ORIGINAL)
 
     # Normalización
     def normalizar_imagen(self, img):
@@ -239,13 +262,12 @@ class Model:
             return cv2.morphologyEx(img, cv2.MORPH_CLOSE, kernel)
         return cv2.dilate(img, kernel)
 
-    # Filtro (puedes cambiar kernel si deseas)
+    # Filtro
     def filtrar_imagen(self, img):
         return cv2.GaussianBlur(img, (5, 5), 0)
 
-    # ====================================================================
-    #                   DICOM + NIFTI + VISUALIZACIÓN 3D
-    # ====================================================================
+
+    # DICOM + NIFTI + VISUALIZACIÓN 3D
 
     def cargar_estudio_dicom(self, carpeta):
         rutas = sorted([os.path.join(carpeta, f) for f in os.listdir(carpeta) if f.lower().endswith(".dcm")])
@@ -297,16 +319,8 @@ class Model:
         img = (img - img.min()) / (img.max() - img.min()) * 255
         return img.astype(np.uint8)
 
-    # ====================================================================
-    #                  SEÑALES BIOMÉDICAS (MAT + FFT)
-    # ====================================================================
 
-    def cargar_mat(self, path):
-        data = loadmat(path)
-        for k, v in data.items():
-            if isinstance(v, np.ndarray):
-                return v.squeeze()
-        return None
+    # SEÑALES BIOMÉDICAS (MAT + FFT)
 
     def fft(self, señal):
         Y = np.abs(np.fft.fft(señal))
@@ -334,9 +348,16 @@ class Model:
     def desviacion_estandar(self, senal, eje=0):
         return np.std(senal, axis=eje)
 
-    # ====================================================================
-    #                          CSV TABULAR
-    # ====================================================================
+    def cargar_mat(self, path):
+        datos = self.senal_gestor.cargar_mat(path)
+        if datos is not None:
+            self.registrar_actividad("sistema", "Carga MAT", path)
+        return datos
+
+    def obtener_fft(self, canal):
+        return self.senal_gestor.obtener_fft(canal)
+
+    #CSV TABULAR
 
     def cargar_csv(self, path):
         try:
@@ -356,6 +377,7 @@ class Model:
 
     def guardar_log_csv(self, usuario, path):
         self.registrar_actividad(usuario, "cargar_csv", path)
+
 
 
 
